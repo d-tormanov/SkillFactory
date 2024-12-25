@@ -1,2 +1,2 @@
 # Telegram Bot:
-https://t.me/DemoReceipesBot
+https://t.me/DemoRecipesBot
