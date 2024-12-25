@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 
 translator = GoogleTranslator(source='en', target='ru')
 
+
 async def get_categories():
     url = "http://www.themealdb.com/api/json/v1/1/list.php?c=list"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             data = await response.json()
             return [category['strCategory'] for category in data['meals']]
+
 
 async def get_recipes_by_category(category):
     url = f"http://www.themealdb.com/api/json/v1/1/filter.php?c={category}"
@@ -26,12 +28,14 @@ async def get_recipes_by_category(category):
             data = await response.json()
             return data['meals']
 
+
 async def get_recipe_details(recipe_id):
     url = f"http://www.themealdb.com/api/json/v1/1/lookup.php?i={recipe_id}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             data = await response.json()
             return data['meals'][0]
+
 
 async def send_recipe_message(message: Message, recipe_details):
     for details in recipe_details:
@@ -73,7 +77,8 @@ async def category_search_start(message: Message, state: FSMContext):
         logger.debug(f"Fetched categories: {categories}")
 
         buttons = [KeyboardButton(text=cat) for cat in categories]
-        keyboard = ReplyKeyboardMarkup(keyboard=[buttons[i:i+2] for i in range(0, len(buttons), 2)], resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup(keyboard=[buttons[i:i + 2] for i in range(0, len(buttons), 2)],
+                                       resize_keyboard=True)
         await message.answer("Выберите категорию:", reply_markup=keyboard)
 
         await state.update_data(categories=categories)
@@ -88,13 +93,17 @@ async def choose_category(message: Message, state: FSMContext):
 
     logger.debug(f"User selected category: {message.text}")
 
+    data = await state.get_data()
+    categories = data.get('categories')
+
+    if not categories:
+        await message.answer("Сначала выполните команду /category_search_random, чтобы получить список категорий.")
+        return
+
     category = message.text.strip()
     logger.debug(f"Category selected by user: {category}")
 
-    data = await state.get_data()
-    valid_categories = data['categories']
-
-    if category not in valid_categories:
+    if category not in categories:
         logger.warning(f"Invalid category: {category}")
         await message.answer("Вы выбрали неверную категорию. Попробуйте снова.")
         return
@@ -119,6 +128,7 @@ async def choose_category(message: Message, state: FSMContext):
 
     await send_recipe_message(message, recipe_details)
 
+
 async def fetch_recipes(message: Message, state: FSMContext):
     """ Обработчик для получения рецептов """
 
@@ -142,6 +152,7 @@ async def fetch_recipes(message: Message, state: FSMContext):
         recipe_details.append(details)
 
     await send_recipe_message(message, recipe_details)
+
 
 def register_handlers(router: Router):
     """  Регистрация обработчиков """
