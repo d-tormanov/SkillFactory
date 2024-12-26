@@ -12,6 +12,7 @@ user_answers = {}
 def register_handlers(dp):
     dp.include_router(router)
 
+
 @router.message(Command("quiz"))
 async def quiz_start(message: Message):
     """Начало викторины."""
@@ -19,10 +20,15 @@ async def quiz_start(message: Message):
     user_answers[message.from_user.id] = []
     question = QUESTIONS[0]["question"]
     options = QUESTIONS[0]["options"]
+
+    # Формируем клавиатуру, извлекая текст из словаря "answer"
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=option, callback_data=f"quiz_0_{idx}")] for idx, option in enumerate(options)
+        [InlineKeyboardButton(text=option["answer"], callback_data=f"quiz_0_{idx}")]
+        for idx, option in enumerate(options)
     ])
+
     await message.answer(question, reply_markup=keyboard)
+
 
 @router.callback_query(lambda c: c.data.startswith("quiz"))
 async def quiz_answer(callback_query: CallbackQuery):
@@ -37,9 +43,13 @@ async def quiz_answer(callback_query: CallbackQuery):
     if question_idx + 1 < len(QUESTIONS):
         next_question = QUESTIONS[question_idx + 1]["question"]
         options = QUESTIONS[question_idx + 1]["options"]
+
+        # Формируем клавиатуру для следующего вопроса
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=option, callback_data=f"quiz_{question_idx + 1}_{idx}")] for idx, option in enumerate(options)
+            [InlineKeyboardButton(text=option["answer"], callback_data=f"quiz_{question_idx + 1}_{idx}")]
+            for idx, option in enumerate(options)
         ])
+
         await callback_query.message.edit_text(next_question, reply_markup=keyboard)
     else:
         result = calculate_result(user_answers[user_id])
