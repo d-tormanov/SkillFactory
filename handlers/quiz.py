@@ -9,6 +9,7 @@ from utils.result_handler import generate_result_message
 router = Router()
 user_answers = {}
 
+
 def register_handlers(dp):
     dp.include_router(router)
 
@@ -55,5 +56,31 @@ async def quiz_answer(callback_query: CallbackQuery):
         result = calculate_result(user_answers[user_id])
         result_message = generate_result_message(result)
         logger.info(f"Результат для пользователя {user_id}: {result_message}")
-        await callback_query.message.edit_text(result_message)
+
+        # Добавляем кнопку для перезапуска
+        restart_button = InlineKeyboardButton(text="Попробовать ещё раз?", callback_data="restart_quiz")
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[restart_button]])
+
+        # Отправляем результат с кнопкой для перезапуска
+        await callback_query.message.edit_text(result_message, reply_markup=keyboard)
         del user_answers[user_id]
+
+
+@router.callback_query(lambda c: c.data == "restart_quiz")
+async def restart_quiz(callback_query: CallbackQuery):
+    """Перезапуск викторины."""
+    user_id = callback_query.from_user.id
+    logger.info(f"Пользователь {user_id} хочет перезапустить викторину.")
+
+    # Перезапускаем викторину, очищая ответы пользователя
+    user_answers[user_id] = []
+
+    # Отправляем первый вопрос с кнопками
+    question = QUESTIONS[0]["question"]
+    options = QUESTIONS[0]["options"]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=option["answer"], callback_data=f"quiz_0_{idx}")]
+        for idx, option in enumerate(options)
+    ])
+
+    await callback_query.message.edit_text(question, reply_markup=keyboard)
