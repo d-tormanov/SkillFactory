@@ -7,4 +7,4 @@ def generate_result_message(result):
     }
     animal = list(animals.keys())[result]
     return (f"Ваше тотемное животное — {animal}!\n{animals[animal]}\n"
-            f"Узнайте больше о программе опеки: https://moscowzoo.ru/opportunities/patronage/")
+            f"\nУзнайте больше о программе опеки: https://moscowzoo.ru/about/guardianship")
